@@ -12,6 +12,7 @@
 #include "texthost.h"
 #include "HookResultWindow.h"
 #include <QClipboard>
+#include <QNetworkAccessManager>
 
 class MisakaHookFinder : public QMainWindow
 {
@@ -29,7 +30,7 @@ private:
     OnRemoveThread* ort;
     OutputText* opt;
 
-    
+    QNetworkAccessManager* qnam;
 
     static void ProcessEventHandle(DWORD processId);
     static void OnCreateThreadHandle(int64_t thread_id, DWORD processId, uint64_t addr, uint64_t context, uint64_t subcontext, LPCWSTR name, LPCWSTR hookcode);
@@ -58,6 +59,7 @@ private:
     void emitResultWinSignal();
     void emitClipboardSignal(QString str);
     void emitRemoveHookFunSignal(uint64_t thread);
+    void emitInitiateHttpCallbackReport(QString str);
 
 private:
     void GetProcessesList();
@@ -72,6 +74,7 @@ signals:
     void onClipboardChange(QString str);
     void onOpenResWin();
     void onRemoveHookFun(uint64_t thread);
+    void onHttpCallbackReportInitiate(QString str);
 
 public slots:
     void AttachProcessBtn_Click();
@@ -83,6 +86,7 @@ public slots:
     void RemoveHookBtn_Click();
     void HookFunCombox_currentIndexChanged(int);
 
+    void HttpCallbackReport_Initiate(QString str);
     void ConsoleBox_Change(QString str);
     void GameTextBox_Change(QString str);
     void HookFunCombox_Change(QString str,int data);

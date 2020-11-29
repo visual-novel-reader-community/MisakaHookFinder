@@ -1,4 +1,6 @@
 #include "MisakaHookFinder.h"
+#include <QNetworkRequest>
+#include <QNetworkReply>
 
 MisakaHookFinder* s_this = nullptr;
 
@@ -13,6 +15,18 @@ MisakaHookFinder::MisakaHookFinder(QWidget *parent)
     ui.setupUi(this);
 
 	s_this = this;
+
+	qnam = new QNetworkAccessManager(this);
+	connect(qnam, &QNetworkAccessManager::finished, [=](QNetworkReply* reply) {
+		if (reply->error()) {
+			qDebug() << "http callback report error: " << reply->errorString();
+			return;
+		}
+
+		qDebug() << "http callback report reply: " << reply->readAll();
+
+		reply->deleteLater();
+	});
 
 	isHooking = false;
 	
@@ -40,6 +54,7 @@ MisakaHookFinder::MisakaHookFinder(QWidget *parent)
 	connect(s_this, SIGNAL(onOpenResWin()), this, SLOT(Reswin_Open()));
 	connect(s_this, SIGNAL(onClipboardChange(QString)), this, SLOT(Clipboard_Change(QString)));
 	connect(s_this, SIGNAL(onRemoveHookFun(uint64_t)), this, SLOT(HookFun_Remove(uint64_t)));
+	connect(s_this, SIGNAL(onHttpCallbackReportInitiate(QString)), this, SLOT(HttpCallbackReport_Initiate(QString)));
 }
 
 /*************************
@@ -306,10 +321,11 @@ void MisakaHookFinder::OutputTextHandle(int64_t thread_id, LPCWSTR output){
 
 	if (thread_id == currentFun) {
 		//当前输出的线程是组合框选中的输出线程
-		PrintToUI(1, QString::fromStdWString(output));
+		auto str = QString::fromStdWString(output);
+		PrintToUI(1, str);
 
 		if (isOpenClipboard == true) {
-			FlushClipboard(QString::fromStdWString(output));
+			FlushClipboard(str);
 		}
 	}
 }
@@ -322,6 +338,7 @@ void MisakaHookFinder::PrintToUI(int editboxID, QString str) {
 		break;
 	case 1:
 		s_this->emitGameTextBoxSignal(str);
+		s_this->emitInitiateHttpCallbackReport(str);
 		break;
 	default:
 		break;
@@ -344,6 +361,30 @@ void MisakaHookFinder::emitConsoleBoxSignal(QString str)
 void MisakaHookFinder::emitGameTextBoxSignal(QString str)
 {
 	emit this->onGameTextBoxContextChange(str);
+}
+
+void MisakaHookFinder::emitInitiateHttpCallbackReport(QString str)
+{
+	emit this->onHttpCallbackReportInitiate(str);
+}
+
+void MisakaHookFinder::HttpCallbackReport_Initiate(QString str)
+{
+	// Added by shunf4: HTTP Callback
+	int port = ui.InputHttpPortSpin->text().toInt();
+	if (port != 0) {
+		auto req = QNetworkRequest();
+		auto url = QUrl();
+		url.setHost("127.0.0.1");
+		url.setPath("/callback/reportText");
+		url.setPort(port);
+		url.setScheme("http");
+
+		req.setUrl(url);
+		req.setHeader(QNetworkRequest::KnownHeaders::ContentTypeHeader, "text/plain; charset=UTF-8");
+
+		qnam->post(req, str.toUtf8());
+	}
 }
 
 void MisakaHookFinder::ConsoleBox_Change(QString str) {

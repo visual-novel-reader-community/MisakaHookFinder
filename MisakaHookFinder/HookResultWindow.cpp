@@ -62,7 +62,7 @@ void HookResultWindow::FindNextBtn_Click() {
 
 	if (row == -1) {
 		//没有选中项的时候，默认第一条开始
-		row == 0;
+		row = 0;
 	}
 	else {
 		row++;//要从下一行开始
