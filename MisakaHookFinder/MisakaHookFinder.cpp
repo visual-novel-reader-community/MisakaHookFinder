@@ -324,6 +324,10 @@ void MisakaHookFinder::OutputTextHandle(int64_t thread_id, LPCWSTR output){
 		auto str = QString::fromStdWString(output);
 		PrintToUI(1, str);
 
+		if (thread_id != 0) {
+			s_this->emitInitiateHttpCallbackReport(str);
+		}
+
 		if (isOpenClipboard == true) {
 			FlushClipboard(str);
 		}
@@ -338,7 +342,6 @@ void MisakaHookFinder::PrintToUI(int editboxID, QString str) {
 		break;
 	case 1:
 		s_this->emitGameTextBoxSignal(str);
-		s_this->emitInitiateHttpCallbackReport(str);
 		break;
 	default:
 		break;
